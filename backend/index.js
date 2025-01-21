@@ -11,9 +11,7 @@ app.use(express.json());
 app.use(morgan("tiny"))
 
 //routes 
-app.get('/', (req, res)=>{
-    res.json("hello nishant")
-})
+app.use("/api", require("./routes/auth"))
 
 
 //server configurations

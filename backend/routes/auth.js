@@ -1,7 +1,8 @@
 const router = require('express').Router();
 const User = require("../models/User");
 const bcrypt = require('bcrypt');
-
+const jwt = require('jsonwebtoken')
+require("dotenv").config({path: "./config/config.env"})
 // Added missing login route implementation
 router.post("/login", async (req, res) => {
     const { email, password } = req.body;
@@ -75,5 +76,34 @@ router.post("/register", async (req, res) => {
         return res.status(500).json({ error: err.message });
     }
 });
+
+router.post("/login", async(req, res) =>{
+    const {email, password} = req.body;
+    if(!email || !password) return res.status(400).json({error: `please enter all the required fields!`})
+
+// email validation
+const emailReg = /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
+if (!emailReg.test(email)) {
+    return res.status(400).json({ error: "please enter a valid email address." });
+}    
+    try{
+        const doesUserExists = await User.findOne({email})
+        if(!doesUserExists) return res.status(400).json({error: "Invalid email or password"})
+        
+        //if there waere any user present
+        const doesPasswordMatch = await bcrypt.compare(
+            password, doesUserExists.password
+        )
+        if(!doesPasswordMatch) return res.status(400).json({error: `invalid email or password!`})
+            const payload = {_id: doesUserExists._id}
+            const token = jwt.sign(payload, process.env.JWT_SECRET,{
+                expiresIn: "1h",
+            });
+            return res.status(200).json({token})
+        } catch (err) {
+        console.log(err);
+        return res.status(500).json({ error: err.message });
+    }
+})
 
 module.exports = router;
